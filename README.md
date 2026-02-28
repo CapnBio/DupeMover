@@ -28,7 +28,7 @@ Have you ever found TV episodes mistakenly filed in your Movies folder? Or disco
 ### Setup
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/dupemover.git
+   git clone https://github.com/CapnBio/dupemover.git
    cd dupemover
    ```
 
