@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Connect to Plex</h5>
+            </div>
+            <div class="card-body text-center">
+                <p>Login with your Plex account to automatically find your server.</p>
+                <div id="authSection">
+                    <button id="plexLoginBtn" class="btn btn-warning btn-lg fw-bold px-5">
+                        <img src="https://www.plex.tv/wp-content/themes/plex/assets/img/plex-logo.svg" height="20" class="me-2" style="filter: brightness(0)">
+                        Login with Plex
+                    </button>
+                </div>
+                
+                <div id="waitingSection" class="d-none">
+                    <div class="spinner-border text-warning mb-3" role="status"></div>
+                    <p class="fw-bold">Waiting for you to login on Plex.tv...</p>
+                    <p class="text-muted small">A new window should have opened. If not, click the button below:</p>
+                    <a id="authLink" href="#" target="_blank" class="btn btn-outline-warning btn-sm">Open Plex Login</a>
+                </div>
+
+                <div id="serverSection" class="d-none mt-4 text-start">
+                    <h5>Select your Plex Server:</h5>
+                    <div id="serverList" class="list-group mt-3">
+                        <!-- Servers will be listed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let pollInterval = null;
+
+$(document).ready(function() {
+    $('#plexLoginBtn').click(function() {
+        startPlexAuth();
+    });
+
+    function startPlexAuth() {
+        $.getJSON('/auth/plex/start', function(data) {
+            if (data.error) {
+                alert('Error starting auth: ' + data.error);
+                return;
+            }
+
+            // Open the auth URL in a new window
+            window.open(data.auth_url, 'PlexAuth', 'width=600,height=700');
+            
+            // Show waiting section
+            $('#authSection').addClass('d-none');
+            $('#waitingSection').removeClass('d-none');
+            $('#authLink').attr('href', data.auth_url);
+
+            // Start polling
+            pollInterval = setInterval(function() {
+                checkAuthStatus(data.pin_id);
+            }, 3000);
+        });
+    }
+
+    function checkAuthStatus(pinId) {
+        $.getJSON('/auth/plex/check/' + pinId, function(data) {
+            if (data.status === 'authorized') {
+                clearInterval(pollInterval);
+                showServerSelection(data.servers, data.token);
+            }
+        });
+    }
+
+    function showServerSelection(servers, token) {
+        $('#waitingSection').addClass('d-none');
+        $('#serverSection').removeClass('d-none');
+        
+        let html = '';
+        if (servers.length === 0) {
+            html = '<div class="alert alert-danger">No Plex Servers found on your account.</div>';
+        } else {
+            servers.forEach(server => {
+                html += `
+                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" 
+                            onclick="saveServer('${server.name}', '${server.uri}', '${server.token}')">
+                        <div>
+                            <div class="fw-bold">${server.name}</div>
+                            <div class="small text-muted">${server.uri || 'Local Access Required'}</div>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">Select</span>
+                    </button>
+                `;
+            });
+        }
+        $('#serverList').html(html);
+    }
+});
+
+function saveServer(name, uri, token) {
+    if (!uri || uri === 'None') {
+        alert('Could not find a valid connection for this server. Ensure the server is reachable.');
+        return;
+    }
+
+    $.ajax({
+        url: '/auth/plex/save',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ name: name, uri: uri, token: token }),
+        success: function() {
+            window.location.href = '/dashboard';
+        },
+        error: function(err) {
+            alert('Error saving server: ' + err.statusText);
+        }
+    });
+}
+</script>
+{% endblock %}

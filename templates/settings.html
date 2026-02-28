@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Application Settings</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="update_password">
+                    <h6 class="text-muted mb-3">Change Web Password</h6>
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" name="new_password" required minlength="4">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" name="confirm_password" required minlength="4">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Update Password</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Target Folders</h5>
+                <span class="badge bg-info text-dark">Used for Moving Files</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Add destination folders where you want to be able to move files (e.g. your TV Shows or Movies directories).</p>
+                
+                <form method="POST" class="mb-4">
+                    <input type="hidden" name="action" value="add_folder">
+                    <div class="input-group">
+                        <input type="text" name="new_folder" class="form-control" placeholder="Absolute path, e.g. /mnt/media/TV Shows" required>
+                        <button class="btn btn-outline-primary" type="submit">Add Folder</button>
+                    </div>
+                </form>
+
+                <ul class="list-group list-group-flush border-top">
+                    {% if target_folders %}
+                        {% for folder in target_folders %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-break small font-monospace">{{ folder }}</span>
+                                <form method="POST" class="d-inline">
+                                    <input type="hidden" name="action" value="remove_folder">
+                                    <input type="hidden" name="folder_path" value="{{ folder }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger py-0 border-0" onclick="return confirm('Remove this target folder?')">
+                                        <i class="bi bi-trash"></i> Remove
+                                    </button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="list-group-item text-center text-muted small py-3 px-0">No target folders added yet.</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Plex Connection</h5>
+            </div>
+            <div class="card-body">
+                {% if plex_server %}
+                    <div class="alert alert-success d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Connected to:</strong><br>
+                            {{ plex_server }}
+                        </div>
+                        <i class="bi bi-check-circle-fill fs-3"></i>
+                    </div>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="clear_plex">
+                        <button type="submit" class="btn btn-outline-danger w-100 mb-2" onclick="return confirm('Disconnect from Plex? (Saves password, clears server)')">
+                            Disconnect Plex Account
+                        </button>
+                    </form>
+                    
+                    <hr>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="full_reset">
+                        <button type="submit" class="btn btn-danger w-100" onclick="return confirm('WARNING: FULL RESET! This will clear ALL settings, log you out, and reset your password to admin. Proceed?')">
+                            Full Factory Reset (Purge All Data)
+                        </button>
+                    </form>
+{% else %}
+                    <div class="alert alert-warning">
+                        Not connected to any Plex server.
+                    </div>
+                    <a href="/setup" class="btn btn-warning w-100">Setup Plex Connection</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="mt-4 text-center">
+            <a href="/dashboard" class="btn btn-link text-decoration-none">&larr; Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
